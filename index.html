@@ -364,7 +364,7 @@ main { padding: 24px 32px; max-width: 1440px; margin: 0 auto; }
       <div class="hero-stat-lbl">Installed RE Capacity</div>
       <div class="hero-stat-val c-green" id="h-re-cap">—</div>
       <div class="hero-stat-sub">As of April 2026</div>
-      <div class="hero-stat-sub" id="h-re-cap-target">Target: — by 2035</div>
+      <div class="hero-stat-sub" id="h-re-cap-target">Target: — by 2050</div>
       <div class="hero-stat-foot">
         <div class="hf-item"><div class="hf-lbl">2019 Baseline</div><div class="hf-val" id="h-baseline">—</div></div>
         <div class="hf-item"><div class="hf-lbl">Growth</div><div class="hf-val c-gold" id="h-growth">—</div></div>
@@ -620,7 +620,7 @@ function renderDashboard(data) {
   const carbon  = val(data,'H10');
 
   set('h-re-cap', reCap ? reCap+' GW' : '12+ GW');
-  set('h-re-cap-target', 'Target: '+(reCap35||'55')+' GW by 2035');
+  set('h-re-cap-target', 'Target: '+(reCap35||'55')+' % by 2050');
   set('h-baseline', baseline ? baseline+' GW' : '6.7 GW');
   set('h-growth', growth ? '+'+growth+'%' : '+79%');
   set('h-ghg-pct', ghgPct ? ghgPct+'%' : '32%');
