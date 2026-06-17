@@ -157,7 +157,7 @@ main { padding: 24px 32px; max-width: 1440px; margin: 0 auto; }
 /* Chips */
 .chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:12px; }
 .chip { font-size:9px; padding:2px 7px; border-radius:20px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:var(--text); font-family:'DM Mono',monospace; }
-.chip.on-track { background:rgba(0,165,80,0.12); border-color:rgba(0,165,80,0.3); color:var(--green); }
+.chip.target-met { background:rgba(0,165,80,0.12); border-color:rgba(0,165,80,0.3); color:var(--green); }
 .chip.at-risk  { background:rgba(240,180,41,0.12); border-color:rgba(240,180,41,0.3); color:var(--gold); }
 .chip.lagging  { background:rgba(224,82,82,0.12); border-color:rgba(224,82,82,0.3); color:var(--red); }
 
@@ -414,7 +414,7 @@ main { padding: 24px 32px; max-width: 1440px; margin: 0 auto; }
     <div class="sec-title">Six Energy Transition Levers</div>
     <div class="sec-rule"></div>
     <div style="font-size:10px;color:var(--muted);white-space:nowrap;">
-      <span style="color:var(--green);">●</span> On Track &nbsp;
+      <span style="color:var(--green);">●</span> Target Met &nbsp;
       <span style="color:var(--gold);">●</span> At Risk &nbsp;
       <span style="color:var(--red);">●</span> Lagging
     </div>
@@ -652,7 +652,7 @@ function renderDashboard(data) {
         { lbl:'Solar Capacity (GW)',            curr: val(data,'L1_08'), tgt: val(data,'L1_09'), unit:'GW', pctOf: val(data,'L1_09') },
       ],
       chips:[
-        { text:'✓ 2025 Target Met', cls:'on-track' },
+        { text:'✓ 2025 Target Met', cls:'target-met' },
         { text:'LSS5+ Active', cls:'at-risk' },
         { text:'ATAP Launched', cls:'' },
       ]
