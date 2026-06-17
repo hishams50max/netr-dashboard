@@ -158,8 +158,8 @@ main { padding: 24px 32px; max-width: 1440px; margin: 0 auto; }
 .chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:12px; }
 .chip { font-size:9px; padding:2px 7px; border-radius:20px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:var(--text); font-family:'DM Mono',monospace; }
 .chip.target-met { background:rgba(0,165,80,0.12); border-color:rgba(0,165,80,0.3); color:var(--green); }
-.chip.at-risk  { background:rgba(240,180,41,0.12); border-color:rgba(240,180,41,0.3); color:var(--gold); }
-.chip.lagging  { background:rgba(224,82,82,0.12); border-color:rgba(224,82,82,0.3); color:var(--red); }
+.chip.in-progress { background:rgba(240,180,41,0.12); border-color:rgba(240,180,41,0.3); color:var(--gold); }
+.chip.lagging { background:rgba(224,82,82,0.12); border-color:rgba(224,82,82,0.3); color:var(--red); }
 
 /* ── TIMELINE ── */
 .timeline-card { background:var(--navy-card); border:1px solid var(--navy-b); border-radius:12px; padding:22px; margin-bottom:22px; }
@@ -415,7 +415,7 @@ main { padding: 24px 32px; max-width: 1440px; margin: 0 auto; }
     <div class="sec-rule"></div>
     <div style="font-size:10px;color:var(--muted);white-space:nowrap;">
       <span style="color:var(--green);">●</span> Target Met &nbsp;
-      <span style="color:var(--gold);">●</span> At Risk &nbsp;
+      <span style="color:var(--gold);">●</span> In Progress &nbsp;
       <span style="color:var(--red);">●</span> Lagging
     </div>
   </div>
@@ -653,7 +653,7 @@ function renderDashboard(data) {
       ],
       chips:[
         { text:'✓ 2025 Target Met', cls:'target-met' },
-        { text:'LSS5+ Active', cls:'at-risk' },
+        { text:'LSS5+ Active', cls:'in-progress' },
         { text:'ATAP Launched', cls:'' },
       ]
     },
@@ -663,7 +663,7 @@ function renderDashboard(data) {
         { lbl:'Govt Buildings Solar (MW)',         curr: val(data,'L2_03'), tgt: val(data,'L2_04'), unit:'MW', pctOf: val(data,'L2_04') },
       ],
       chips:[
-        { text:'⚠ Early Stage', cls:'at-risk' },
+        { text:'⚠ Early Stage', cls:'in-progress' },
         { text:'GTFS 4.0 Active', cls:'' },
         { text:'GITA/GITE Extended', cls:'' },
       ]
@@ -674,7 +674,7 @@ function renderDashboard(data) {
         { lbl:'H₂ Production Target',      curr: 'Pilot', tgt: val(data,'L3_02')+' Mtpa', unit:'', pctOf: null, fixedPct: 5 },
       ],
       chips:[
-        { text:'⚠ Pilot Phase', cls:'at-risk' },
+        { text:'⚠ Pilot Phase', cls:'in-progress' },
         { text:'Sarawak Hub', cls:'' },
         { text:'GITE Eligible', cls:'' },
       ]
@@ -685,7 +685,7 @@ function renderDashboard(data) {
         { lbl:'Biomass & Biogas Power (GW)',curr: val(data,'L4_03'), tgt: val(data,'L4_04'), unit:' GW', pctOf: val(data,'L4_04') },
       ],
       chips:[
-        { text:'⚠ Developing', cls:'at-risk' },
+        { text:'⚠ Developing', cls:'in-progress' },
         { text:'Palm Biomass', cls:'' },
         { text:'UCO Programme', cls:'' },
       ]
@@ -696,7 +696,7 @@ function renderDashboard(data) {
         { lbl:'Urban Public Transport Modal Share',curr: val(data,'L5_03'), tgt: val(data,'L5_04'), unit:'%', pctOf: val(data,'L5_04') },
       ],
       chips:[
-        { text:'⚠ Needs Scale-up', cls:'at-risk' },
+        { text:'⚠ Needs Scale-up', cls:'in-progress' },
         { text:'xEV Policy', cls:'' },
         { text:'E2W Included', cls:'' },
       ]
