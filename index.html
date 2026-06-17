@@ -252,6 +252,59 @@ main { padding: 24px 32px; max-width: 1440px; margin: 0 auto; }
 .sg-text a { color:var(--sky); }
 
 ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:var(--navy); } ::-webkit-scrollbar-thumb { background:var(--navy-b); border-radius:3px; }
+
+/* =========================================
+   MOBILE & TABLET RESPONSIVE DESIGN
+========================================= */
+
+@media (max-width: 1024px) {
+  main { padding: 20px; }
+  .hero { grid-template-columns: 1fr; gap: 24px; }
+  .hero-stat.left, .hero-stat.right { border: none; padding: 0; }
+  .lever-grid { grid-template-columns: repeat(2, 1fr); }
+  .bottom-grid { grid-template-columns: 1fr; }
+  .ghg-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+  }
+  .hd-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  main { padding: 14px; }
+  .hero { padding: 20px; }
+  .arc-container, .arc-svg { width: 160px; }
+  .lever-grid { grid-template-columns: 1fr; }
+  .econ-grid { grid-template-columns: 1fr; }
+  .ghg-stats { grid-template-columns: 1fr; }
+  .footer-strip {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .fdiv { display: none; }
+  .fsrc { text-align: left; max-width: none; }
+  .tl-meta { flex-direction: column; gap: 12px; }
+  .timeline-card { overflow-x: auto; }
+  .timeline { min-width: 700px; }
+}
+
+@media (max-width: 480px) {
+  .hd-title { font-size: 16px; }
+  .hero-stat-val, .arc-num { font-size: 28px; }
+  .econ-val { font-size: 18px; }
+  .invest-nums { flex-direction: column; gap: 10px; }
+  .l-name { font-size: 13px; }
+  .refresh-btn { width: 100%; }
+}
+
 </style>
 </head>
 <body>
