@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NETR Live Dashboard — Ministry of Economy</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap');
+
+:root {
+  --navy:       #0a1628;
+  --navy-mid:   #0f2040;
+  --navy-card:  #122044;
+  --navy-b:     #1e3560;
+  --green:      #00a550;
+  --green-dk:   #007a3d;
+  --green-glow: rgba(0,165,80,0.18);
+  --gold:       #f0b429;
+  --red:        #e05252;
+  --sky:        #38bdf8;
+  --purple:     #a78bfa;
+  --orange:     #fb923c;
+  --teal:       #2dd4bf;
+  --white:      #f0f4ff;
+  --muted:      #7a9abf;
+  --text:       #ccdaee;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--navy); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+/* ── LOADING SCREEN ── */
+#loadScreen {
+  position: fixed; inset: 0; z-index: 999;
+  background: var(--navy);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 20px;
+}
+.load-logo { font-size: 48px; }
+.load-title { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--white); }
+.load-sub { font-size: 12px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+.load-bar { width: 240px; height: 3px; background: var(--navy-b); border-radius: 2px; overflow: hidden; }
+.load-fill { height: 100%; background: linear-gradient(90deg, var(--green-dk), var(--green)); border-radius: 2px; animation: loadFill 2s ease forwards; }
+@keyframes loadFill { from { width: 0% } to { width: 100% } }
+.load-status { font-size: 11px; color: var(--green); font-family: 'DM Mono', monospace; }
+
+/* ── ERROR BANNER ── */
+#setupBanner {
+  display: none;
+  background: rgba(240,180,41,0.1);
+  border: 1px solid rgba(240,180,41,0.4);
+  border-radius: 10px;
+  padding: 16px 24px;
+  margin: 20px 32px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+#setupBanner strong { color: var(--gold); display: block; margin-bottom: 6px; font-size: 14px; }
+#setupBanner code { background: rgba(255,255,255,0.08); padding: 2px 7px; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--sky); }
+#setupBanner ol { margin: 8px 0 0 20px; color: var(--text); }
+#setupBanner li { margin-bottom: 4px; }
+
+/* ── HEADER ── */
+header {
+  background: linear-gradient(135deg, #061020 0%, #0a1e3c 60%, #0d2a1a 100%);
+  border-bottom: 1px solid var(--navy-b);
+  padding: 18px 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.hd-left { display: flex; align-items: center; gap: 14px; }
+.hd-badge { width: 44px; height: 44px; background: linear-gradient(135deg, var(--green-dk), var(--green)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 0 20px var(--green-glow); }
+.hd-title { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--white); }
+.hd-sub { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
+.hd-right { display: flex; align-items: center; gap: 18px; }
+.live-pill { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--green); letter-spacing: 1px; text-transform: uppercase; font-family: 'DM Mono', monospace; }
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulseDot 2s ease-in-out infinite; }
+@keyframes pulseDot { 0%,100% { box-shadow: 0 0 0 0 var(--green-glow); } 50% { box-shadow: 0 0 0 6px transparent; } }
+#lastUpdated { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+.refresh-btn { background: rgba(0,165,80,0.12); border: 1px solid rgba(0,165,80,0.3); color: var(--green); padding: 6px 14px; border-radius: 6px; font-size: 11px; font-family: 'DM Mono', monospace; cursor: pointer; letter-spacing: 1px; transition: all 0.2s; }
+.refresh-btn:hover { background: rgba(0,165,80,0.22); }
+
+/* ── MAIN ── */
+main { padding: 24px 32px; max-width: 1440px; margin: 0 auto; }
+
+/* ── HERO ── */
+.hero {
+  background: linear-gradient(135deg, #0d2a18 0%, #0a1e38 50%, #0d2235 100%);
+  border: 1px solid var(--navy-b); border-radius: 16px;
+  padding: 28px 32px; margin-bottom: 22px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; align-items: center;
+  position: relative; overflow: hidden;
+}
+.hero::before { content:''; position:absolute; top:-60px; left:-60px; width:220px; height:220px; background:radial-gradient(circle,rgba(0,165,80,0.08) 0%,transparent 70%); pointer-events:none; }
+
+/* Arc gauge */
+.arc-wrap { text-align: center; }
+.arc-eyebrow { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--green); font-family: 'DM Mono', monospace; margin-bottom: 10px; }
+.arc-container { position: relative; width: 190px; height: 110px; margin: 0 auto 10px; }
+.arc-svg { width: 190px; height: 110px; }
+.arc-track { fill:none; stroke:#1e3560; stroke-width:13; stroke-linecap:round; }
+.arc-fill-el { fill:none; stroke:var(--green); stroke-width:13; stroke-linecap:round; stroke-dasharray:251.2; stroke-dashoffset:251.2; filter:drop-shadow(0 0 6px rgba(0,165,80,0.5)); transition: stroke-dashoffset 2s cubic-bezier(0.4,0,0.2,1); }
+.arc-val { position:absolute; bottom:0; left:50%; transform:translateX(-50%); text-align:center; }
+.arc-num { font-size:34px; font-weight:700; color:var(--white); font-family:'DM Mono',monospace; line-height:1; }
+.arc-unit { font-size:12px; color:var(--green); font-weight:600; }
+.arc-meta { display:flex; justify-content:center; gap:20px; margin-top:8px; }
+.arc-meta-item { text-align:center; }
+.arc-meta-lbl { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+.arc-meta-val { font-size:12px; font-weight:600; font-family:'DM Mono',monospace; }
+.c-gold { color:var(--gold); } .c-green { color:var(--green); } .c-sky { color:var(--sky); } .c-red { color:var(--red); }
+
+.hero-stat { text-align:center; }
+.hero-stat.left { border-right:1px solid var(--navy-b); }
+.hero-stat.right { border-left:1px solid var(--navy-b); }
+.hero-stat-lbl { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+.hero-stat-val { font-size:34px; font-weight:700; font-family:'DM Mono',monospace; line-height:1.1; }
+.hero-stat-sub { font-size:11px; color:var(--text); margin-top:4px; }
+.hero-stat-foot { display:flex; gap:12px; justify-content:center; margin-top:10px; }
+.hf-item { text-align:center; }
+.hf-lbl { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+.hf-val { font-size:13px; font-family:'DM Mono',monospace; }
+
+/* ── SECTION HEADER ── */
+.sec-hd { display:flex; align-items:center; gap:10px; margin-bottom:14px; margin-top:22px; }
+.sec-title { font-size:10px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--muted); white-space:nowrap; }
+.sec-rule { flex:1; height:1px; background:linear-gradient(to right, var(--navy-b), transparent); }
+
+/* ── LEVER GRID ── */
+.lever-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:22px; }
+.lcard { background:var(--navy-card); border:1px solid var(--navy-b); border-radius:12px; padding:18px; position:relative; overflow:hidden; transition:transform 0.2s, border-color 0.2s; }
+.lcard:hover { transform:translateY(-2px); border-color:rgba(255,255,255,0.12); }
+.lcard::after { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:12px 12px 0 0; }
+.lcard.green::after  { background:linear-gradient(90deg,var(--green-dk),var(--green)); }
+.lcard.gold::after   { background:linear-gradient(90deg,#b8860b,var(--gold)); }
+.lcard.sky::after    { background:linear-gradient(90deg,#0369a1,var(--sky)); }
+.lcard.purple::after { background:linear-gradient(90deg,#6d28d9,var(--purple)); }
+.lcard.orange::after { background:linear-gradient(90deg,#c2410c,var(--orange)); }
+.lcard.teal::after   { background:linear-gradient(90deg,#0f766e,var(--teal)); }
+.l-icon { font-size:22px; margin-bottom:8px; }
+.l-num { font-size:10px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:2px; }
+.l-name { font-size:14px; font-weight:600; color:var(--white); margin-bottom:12px; line-height:1.3; }
+
+/* Progress rows */
+.prog-row { margin-bottom:8px; }
+.prog-hd { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; }
+.prog-lbl { font-size:10px; color:var(--muted); }
+.prog-val { font-family:'DM Mono',monospace; font-size:11px; }
+.prog-track { height:5px; background:#1e3560; border-radius:3px; position:relative; overflow:hidden; }
+.prog-fill { height:100%; border-radius:3px; transition:width 1.8s cubic-bezier(0.4,0,0.2,1); }
+.prog-fill.green  { background:linear-gradient(90deg,var(--green-dk),var(--green)); box-shadow:0 0 8px rgba(0,165,80,0.4); }
+.prog-fill.gold   { background:linear-gradient(90deg,#b8860b,var(--gold)); }
+.prog-fill.sky    { background:linear-gradient(90deg,#0369a1,var(--sky)); }
+.prog-fill.purple { background:linear-gradient(90deg,#6d28d9,var(--purple)); }
+.prog-fill.orange { background:linear-gradient(90deg,#c2410c,var(--orange)); }
+.prog-fill.teal   { background:linear-gradient(90deg,#0f766e,var(--teal)); }
+
+/* Chips */
+.chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:12px; }
+.chip { font-size:9px; padding:2px 7px; border-radius:20px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:var(--text); font-family:'DM Mono',monospace; }
+.chip.on-track { background:rgba(0,165,80,0.12); border-color:rgba(0,165,80,0.3); color:var(--green); }
+.chip.at-risk  { background:rgba(240,180,41,0.12); border-color:rgba(240,180,41,0.3); color:var(--gold); }
+.chip.lagging  { background:rgba(224,82,82,0.12); border-color:rgba(224,82,82,0.3); color:var(--red); }
+
+/* ── TIMELINE ── */
+.timeline-card { background:var(--navy-card); border:1px solid var(--navy-b); border-radius:12px; padding:22px; margin-bottom:22px; }
+.tl-meta { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; }
+.tl-title { font-size:13px; font-weight:600; color:var(--white); }
+.tl-sub { font-size:10px; color:var(--muted); margin-top:2px; }
+.tl-pct { text-align:right; }
+.tl-pct-val { font-size:20px; font-weight:700; font-family:'DM Mono',monospace; color:var(--green); }
+.tl-pct-lbl { font-size:9px; color:var(--muted); }
+.timeline { display:flex; align-items:flex-start; position:relative; padding-bottom:6px; }
+.tl-track { position:absolute; top:17px; left:0; right:0; height:2px; background:var(--navy-b); }
+.tl-progress { position:absolute; top:17px; left:0; height:2px; background:linear-gradient(90deg,var(--green-dk),var(--green)); box-shadow:0 0 8px rgba(0,165,80,0.4); transition:width 2s ease; }
+.tl-node { flex:1; display:flex; flex-direction:column; align-items:center; position:relative; }
+.tl-dot { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; font-family:'DM Mono',monospace; border:2px solid; z-index:1; background:var(--navy); transition:transform 0.2s; }
+.tl-node:hover .tl-dot { transform:scale(1.1); }
+.tl-dot.done    { background:var(--green-dk); border-color:var(--green); color:#fff; box-shadow:0 0 10px rgba(0,165,80,0.4); }
+.tl-dot.current { border-color:var(--green); color:var(--green); animation:curPulse 2.5s ease-in-out infinite; }
+.tl-dot.future  { border-color:var(--navy-b); color:var(--muted); }
+@keyframes curPulse { 0%,100%{box-shadow:0 0 10px rgba(0,165,80,0.3);}50%{box-shadow:0 0 22px rgba(0,165,80,0.6);} }
+.tl-year  { font-size:9px; font-weight:600; font-family:'DM Mono',monospace; color:var(--muted); margin-top:6px; }
+.tl-label { font-size:9px; color:var(--text); margin-top:3px; text-align:center; max-width:72px; line-height:1.3; }
+.tl-re    { font-size:10px; font-weight:700; font-family:'DM Mono',monospace; margin-top:2px; }
+.tl-re.done { color:var(--green); } .tl-re.current { color:var(--sky); } .tl-re.future { color:var(--gold); }
+.tl-legend { display:flex; gap:14px; margin-top:16px; flex-wrap:wrap; }
+.tl-leg-item { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--muted); }
+.tl-leg-dot { width:8px; height:8px; border-radius:50%; }
+
+/* ── BOTTOM GRID ── */
+.bottom-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:22px; }
+.stat-panel { background:var(--navy-card); border:1px solid var(--navy-b); border-radius:12px; padding:18px; }
+.sp-title { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
+.econ-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.econ-item { background:rgba(255,255,255,0.03); border:1px solid var(--navy-b); border-radius:8px; padding:12px; }
+.econ-lbl { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+.econ-val { font-size:20px; font-weight:700; font-family:'DM Mono',monospace; line-height:1; }
+.econ-sub { font-size:9px; margin-top:3px; color:var(--muted); }
+.econ-sub span { color:var(--gold); font-family:'DM Mono',monospace; }
+.invest-box { margin-top:12px; padding:12px; background:rgba(0,165,80,0.06); border:1px solid rgba(0,165,80,0.2); border-radius:8px; }
+.invest-lbl { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+.invest-nums { display:flex; gap:14px; align-items:baseline; flex-wrap:wrap; }
+.invest-val { font-size:18px; font-weight:700; font-family:'DM Mono',monospace; color:var(--white); }
+.invest-desc { font-size:9px; color:var(--muted); }
+
+/* Flagship list */
+.flagship-list { display:flex; flex-direction:column; gap:6px; }
+.fl-item { display:flex; align-items:center; gap:10px; padding:8px 10px; background:rgba(255,255,255,0.02); border:1px solid var(--navy-b); border-radius:8px; transition:background 0.2s; }
+.fl-item:hover { background:rgba(255,255,255,0.05); }
+.fl-num { font-size:9px; font-weight:700; font-family:'DM Mono',monospace; color:var(--muted); min-width:18px; }
+.fl-icon { font-size:13px; }
+.fl-name { flex:1; font-size:11px; color:var(--text); }
+.fl-status { font-size:9px; padding:2px 7px; border-radius:20px; font-weight:600; white-space:nowrap; }
+.fl-status.active  { background:rgba(0,165,80,0.15); color:var(--green); border:1px solid rgba(0,165,80,0.3); }
+.fl-status.pilot   { background:rgba(56,189,248,0.12); color:var(--sky); border:1px solid rgba(56,189,248,0.3); }
+.fl-status.planned { background:rgba(240,180,41,0.12); color:var(--gold); border:1px solid rgba(240,180,41,0.3); }
+
+/* ── GHG ── */
+.ghg-card { background:var(--navy-card); border:1px solid var(--navy-b); border-radius:12px; padding:22px; margin-bottom:22px; }
+.ghg-bars { display:flex; align-items:flex-end; gap:8px; height:90px; margin-top:18px; padding-bottom:24px; position:relative; border-bottom:1px solid var(--navy-b); }
+.ghg-grp { flex:1; display:flex; flex-direction:column; align-items:center; }
+.ghg-bar { width:100%; border-radius:4px 4px 0 0; position:relative; min-height:4px; transition:height 1.2s cubic-bezier(0.4,0,0.2,1); }
+.ghg-bar.actual { background:linear-gradient(180deg,#e05252,#b91c1c); }
+.ghg-bar.target { background:linear-gradient(180deg,var(--green),var(--green-dk)); }
+.ghg-bar-yr { font-size:9px; color:var(--muted); font-family:'DM Mono',monospace; position:absolute; bottom:-18px; left:50%; transform:translateX(-50%); white-space:nowrap; }
+.ghg-bar-v  { font-size:8px; color:var(--text); font-family:'DM Mono',monospace; position:absolute; top:-13px; left:50%; transform:translateX(-50%); white-space:nowrap; }
+.ghg-legend { display:flex; gap:14px; margin-top:8px; }
+.ghg-leg-item { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--muted); }
+.ghg-leg-dot { width:8px; height:8px; border-radius:2px; }
+.ghg-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:16px; }
+.ghg-stat { padding:10px 12px; background:rgba(255,255,255,0.02); border:1px solid var(--navy-b); border-radius:8px; text-align:center; }
+.ghg-stat.highlight { background:rgba(0,165,80,0.06); border-color:rgba(0,165,80,0.2); }
+.ghg-stat-lbl { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+.ghg-stat-val { font-size:17px; font-weight:700; font-family:'DM Mono',monospace; }
+
+/* ── FOOTER ── */
+.footer-strip { background:var(--navy-card); border:1px solid var(--navy-b); border-radius:12px; padding:14px 22px; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+.fkpi { display:flex; align-items:center; gap:8px; }
+.fkpi-icon { font-size:16px; }
+.fkpi-val { font-size:16px; font-weight:700; font-family:'DM Mono',monospace; }
+.fkpi-lbl { font-size:9px; color:var(--muted); }
+.fdiv { width:1px; height:32px; background:var(--navy-b); }
+.fsrc { font-size:9px; color:var(--muted); text-align:right; max-width:200px; }
+
+/* ── SETUP GUIDE ── */
+.setup-guide { background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.25); border-radius:12px; padding:22px 26px; margin-bottom:22px; display:none; }
+.sg-title { font-size:14px; font-weight:600; color:var(--sky); margin-bottom:14px; }
+.sg-step { display:flex; gap:14px; margin-bottom:12px; }
+.sg-num { width:26px; height:26px; border-radius:50%; background:var(--sky); color:#000; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.sg-text { font-size:12px; color:var(--text); line-height:1.6; }
+.sg-text code { background:rgba(255,255,255,0.08); padding:1px 6px; border-radius:4px; font-family:'DM Mono',monospace; font-size:11px; color:var(--sky); }
+.sg-text a { color:var(--sky); }
+
+::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:var(--navy); } ::-webkit-scrollbar-thumb { background:var(--navy-b); border-radius:3px; }
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="loadScreen">
+  <div class="load-logo">🌿</div>
+  <div class="load-title">NETR Live Dashboard</div>
+  <div class="load-sub">Ministry of Economy</div>
+  <div class="load-bar"><div class="load-fill"></div></div>
+  <div class="load-status" id="loadStatus">Connecting to Google Sheet…</div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="hd-left">
+    <div class="hd-badge">🌿</div>
+    <div>
+      <div class="hd-title">NETR Live Dashboard</div>
+      <div class="hd-sub">Ministry of Economy · National Energy Transition Roadmap</div>
+    </div>
+  </div>
+  <div class="hd-right">
+    <div class="live-pill"><div class="live-dot"></div> Live from Google Sheet</div>
+    <div id="lastUpdated" class="c-muted">—</div>
+    <button class="refresh-btn" onclick="loadData()">⟳ Refresh</button>
+  </div>
+</header>
+
+<main id="mainContent" style="display:none;">
+
+  <!-- SETUP GUIDE (shown on error) -->
+  <div class="setup-guide" id="setupGuide">
+    <div class="sg-title">📋 One-time Setup: Publish Your Google Sheet</div>
+    <div class="sg-step">
+      <div class="sg-num">1</div>
+      <div class="sg-text">Open your Google Sheet: <a href="https://docs.google.com/spreadsheets/d/1uPo8s1gItk7TIpfxU8SfCpoXjuzNXmX9L60UT3A78yA" target="_blank">NETR Dashboard Master Data File</a></div>
+    </div>
+    <div class="sg-step">
+      <div class="sg-num">2</div>
+      <div class="sg-text">Click <code>File</code> → <code>Share</code> → <code>Publish to web</code></div>
+    </div>
+    <div class="sg-step">
+      <div class="sg-num">3</div>
+      <div class="sg-text">In the dialog, select <code>Entire Document</code> and format <code>Comma-separated values (.csv)</code>, then click <code>Publish</code></div>
+    </div>
+    <div class="sg-step">
+      <div class="sg-num">4</div>
+      <div class="sg-text">Click <code>⟳ Refresh</code> above — the dashboard will load live data from your Sheet automatically.</div>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--muted);">Note: Publishing makes the data readable by this dashboard (read-only). Your editing access remains unchanged. You can unpublish any time from the same menu.</div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-stat left">
+      <div class="hero-stat-lbl">Installed RE Capacity</div>
+      <div class="hero-stat-val c-green" id="h-re-cap">—</div>
+      <div class="hero-stat-sub">As of April 2026</div>
+      <div class="hero-stat-sub" id="h-re-cap-target">Target: — by 2035</div>
+      <div class="hero-stat-foot">
+        <div class="hf-item"><div class="hf-lbl">2019 Baseline</div><div class="hf-val" id="h-baseline">—</div></div>
+        <div class="hf-item"><div class="hf-lbl">Growth</div><div class="hf-val c-gold" id="h-growth">—</div></div>
+      </div>
+    </div>
+
+    <div class="arc-wrap">
+      <div class="arc-eyebrow">RE Share of Installed Capacity</div>
+      <div class="arc-container">
+        <svg class="arc-svg" viewBox="0 0 200 110">
+          <path class="arc-track" d="M 16,100 A 84,84 0 0,1 184,100"/>
+          <!-- Gold target marker line -->
+          <line x1="100" y1="100" x2="38" y2="30" stroke="rgba(240,180,41,0.4)" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <circle cx="38" cy="30" r="3.5" fill="rgba(240,180,41,0.5)"/>
+          <text x="20" y="24" fill="#f0b429" font-size="8" font-family="DM Mono, monospace" id="arcTargetLabel">40%</text>
+          <text x="14" y="32" fill="#f0b429" font-size="7" font-family="DM Mono, monospace">2035</text>
+          <path class="arc-fill-el" id="arcFill" d="M 16,100 A 84,84 0 0,1 184,100"/>
+        </svg>
+        <div class="arc-val">
+          <div class="arc-num" id="arcNum">0</div>
+          <div class="arc-unit">% achieved</div>
+        </div>
+      </div>
+      <div class="arc-meta">
+        <div class="arc-meta-item"><div class="arc-meta-lbl">2025 Target</div><div class="arc-meta-val c-gold" id="h-target-25">—</div></div>
+        <div class="arc-meta-item"><div class="arc-meta-lbl">Achieved</div><div class="arc-meta-val c-green" id="h-achieved">— ✓</div></div>
+        <div class="arc-meta-item"><div class="arc-meta-lbl">2035 Target</div><div class="arc-meta-val c-gold" id="h-target-35">—</div></div>
+      </div>
+    </div>
+
+    <div class="hero-stat right">
+      <div class="hero-stat-lbl">GHG Reduction Pathway</div>
+      <div class="hero-stat-val c-sky" id="h-ghg-pct">—</div>
+      <div class="hero-stat-sub" id="h-ghg-sub">Target reduction by 2050</div>
+      <div class="hero-stat-foot">
+        <div class="hf-item">
+          <div class="hf-lbl">Carbon intensity</div>
+          <div class="hf-val" id="h-carbon-int">—</div>
+          <div style="font-size:9px;color:var(--muted);">by 2035 vs 2005</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEVER GRID -->
+  <div class="sec-hd">
+    <div class="sec-title">Six Energy Transition Levers</div>
+    <div class="sec-rule"></div>
+    <div style="font-size:10px;color:var(--muted);white-space:nowrap;">
+      <span style="color:var(--green);">●</span> On Track &nbsp;
+      <span style="color:var(--gold);">●</span> At Risk &nbsp;
+      <span style="color:var(--red);">●</span> Lagging
+    </div>
+  </div>
+
+  <div class="lever-grid" id="leverGrid">
+    <!-- Populated by JS -->
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="sec-hd"><div class="sec-title">Roadmap Milestones</div><div class="sec-rule"></div></div>
+  <div class="timeline-card">
+    <div class="tl-meta">
+      <div><div class="tl-title">Energy Transition Journey — Key RE Capacity Milestones</div><div class="tl-sub">RE share of installed capacity by milestone year. Target: Net Zero by 2050.</div></div>
+      <div class="tl-pct"><div class="tl-pct-val" id="tlPct">—</div><div class="tl-pct-lbl">of 2035 RE% achieved</div></div>
+    </div>
+    <div class="timeline" id="timeline">
+      <div class="tl-track"></div>
+      <div class="tl-progress" id="tlProgress" style="width:0%"></div>
+      <!-- nodes injected by JS -->
+    </div>
+    <div class="tl-legend">
+      <div class="tl-leg-item"><div class="tl-leg-dot" style="background:var(--green)"></div>Achieved</div>
+      <div class="tl-leg-item"><div class="tl-leg-dot" style="background:var(--sky)"></div>Current / In Progress</div>
+      <div class="tl-leg-item"><div class="tl-leg-dot" style="background:var(--gold);border:1px solid var(--gold)"></div>Future Target</div>
+    </div>
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="sec-hd"><div class="sec-title">Economic Impact & Flagship Projects</div><div class="sec-rule"></div></div>
+  <div class="bottom-grid">
+    <div class="stat-panel">
+      <div class="sp-title">Economic Impact Tracker</div>
+      <div class="econ-grid">
+        <div class="econ-item">
+          <div class="econ-lbl">Investment Attracted</div>
+          <div class="econ-val c-green" id="e-invest">—</div>
+          <div class="econ-sub">vs <span id="e-invest-target">—</span> original target</div>
+          <div style="margin-top:4px;font-size:9px;" id="e-invest-pct" class="c-green">—</div>
+        </div>
+        <div class="econ-item">
+          <div class="econ-lbl">Green Jobs Created</div>
+          <div class="econ-val c-sky" id="e-jobs">—</div>
+          <div class="econ-sub">vs <span id="e-jobs-target">—</span> original target</div>
+          <div style="margin-top:4px;font-size:9px;" id="e-jobs-pct" class="c-sky">—</div>
+        </div>
+        <div class="econ-item">
+          <div class="econ-lbl">GDP Contribution by 2050</div>
+          <div class="econ-val c-gold" id="e-gdp">—</div>
+          <div class="econ-sub">GDP uplift: <span id="e-gdp-sub">—</span></div>
+          <div style="margin-top:4px;font-size:9px;color:var(--muted);" id="e-gdp-cum">—</div>
+        </div>
+        <div class="econ-item">
+          <div class="econ-lbl">GHG Reduction</div>
+          <div class="econ-val c-purple" id="e-ghg">>10,000</div>
+          <div class="econ-sub">GgCO₂eq/yr target</div>
+          <div style="margin-top:4px;font-size:9px;color:var(--muted);">Flagship projects cumulative</div>
+        </div>
+      </div>
+      <div class="invest-box">
+        <div class="invest-lbl">Total Investment Potential by 2050</div>
+        <div class="invest-nums">
+          <div><div class="invest-val" id="e-inv-rt">—</div><div class="invest-desc">Responsible Transition</div></div>
+          <div style="color:var(--navy-b);font-size:18px;">+</div>
+          <div><div class="invest-val" id="e-inv-netr">—</div><div class="invest-desc">Full NETR opportunity</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-panel">
+      <div class="sp-title">10 Flagship Catalyst Projects</div>
+      <div class="flagship-list" id="flagshipList"><!-- injected --></div>
+    </div>
+  </div>
+
+  <!-- GHG -->
+  <div class="sec-hd"><div class="sec-title">GHG Emissions Pathway (MtCO₂eq)</div><div class="sec-rule"></div></div>
+  <div class="ghg-card">
+    <div style="font-size:13px;font-weight:600;color:var(--white);margin-bottom:4px;">Responsible Transition Emissions Reduction Pathway</div>
+    <div style="font-size:11px;color:var(--muted);" id="ghgSubtitle">Energy sector GHG reduction pathway — loading…</div>
+    <div class="ghg-bars" id="ghgBars"></div>
+    <div class="ghg-legend">
+      <div class="ghg-leg-item"><div class="ghg-leg-dot" style="background:#e05252"></div>Historical / Actual</div>
+      <div class="ghg-leg-item"><div class="ghg-leg-dot" style="background:var(--green)"></div>NETR Target Pathway</div>
+    </div>
+    <div class="ghg-stats">
+      <div class="ghg-stat"><div class="ghg-stat-lbl">2019 Baseline</div><div class="ghg-stat-val c-red" id="ghg-base">—</div><div style="font-size:9px;color:var(--muted);">~80% from energy sector</div></div>
+      <div class="ghg-stat"><div class="ghg-stat-lbl">2030 Target</div><div class="ghg-stat-val c-gold" id="ghg-2030">–45% intensity</div><div style="font-size:9px;color:var(--muted);">vs 2005 carbon/GDP ratio</div></div>
+      <div class="ghg-stat"><div class="ghg-stat-lbl">2040 Target</div><div class="ghg-stat-val c-sky">Low Carbon</div><div style="font-size:9px;color:var(--muted);">Coal share → 0% by 2050</div></div>
+      <div class="ghg-stat highlight"><div class="ghg-stat-lbl">2050 Net Zero</div><div class="ghg-stat-val c-green" id="ghg-2050">—</div><div style="font-size:9px;color:var(--muted);" id="ghg-2050-sub">— reduction from 2019</div></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer-strip">
+    <div class="fkpi"><div class="fkpi-icon">🏆</div><div><div class="fkpi-val c-green" id="f-asean">—</div><div class="fkpi-lbl">WEF Energy Transition Index 2023</div></div></div>
+    <div class="fdiv"></div>
+    <div class="fkpi"><div class="fkpi-icon">🌍</div><div><div class="fkpi-val c-sky" id="f-global">—</div><div class="fkpi-lbl">ETI Global Ranking</div></div></div>
+    <div class="fdiv"></div>
+    <div class="fkpi"><div class="fkpi-icon">💰</div><div><div class="fkpi-val c-gold" id="f-fund">—</div><div class="fkpi-lbl">NETR Seed Fund (Budget 2025)</div></div></div>
+    <div class="fdiv"></div>
+    <div class="fkpi"><div class="fkpi-icon">📅</div><div><div class="fkpi-val" id="f-netzero">—</div><div class="fkpi-lbl">Net Zero Target Year</div></div></div>
+    <div class="fdiv"></div>
+    <div class="fsrc">Sources: NETR (2023) · IRENA 2025 · Energy Commission · Ministry of Economy</div>
+  </div>
+
+</main>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────
+const SHEET_ID = '1uPo8s1gItk7TIpfxU8SfCpoXjuzNXmX9L60UT3A78yA'; // live sheet
+const CSV_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSfflvUU0ESNDtT8FCdnTkK5pLS7_VfuWfGTtno-l6RY37WMjWWXvKaEGv_uzg13vQT8EwxtyqwkdKw/pub?output=csv';
+
+// ─── HELPERS ──────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const set = (id, val) => { const el = $(id); if(el && val !== undefined && val !== '') el.textContent = val; };
+const fmt = (v, suffix='') => v ? `${v}${suffix}` : '—';
+
+function parseCSV(text) {
+  const lines = text.split('\n');
+  const result = {};
+  lines.forEach(line => {
+    const cols = parseCSVLine(line);
+    if(cols.length >= 2 && cols[0] && cols[0].match(/^[A-Z][A-Za-z0-9_]{1,9}$/)) {
+      result[cols[0].trim()] = cols.map(c => c.trim());
+    }
+  });
+  return result;
+}
+
+function parseCSVLine(line) {
+  const result = []; let cur = ''; let inQ = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch==='"'){ if(inQ && line[i+1]==='"'){ cur+='"'; i++; } else inQ=!inQ; }
+    else if(ch===',' && !inQ){ result.push(cur); cur=''; }
+    else cur+=ch;
+  }
+  result.push(cur);
+  return result;
+}
+
+function val(data, id, col=2) {
+  return data[id] ? data[id][col] || '' : '';
+}
+
+// ─── MAIN LOAD ────────────────────────────────────────────
+async function loadData() {
+  $('loadStatus').textContent = 'Fetching live data from Google Sheet…';
+  const btn = document.querySelector('.refresh-btn');
+  if(btn) btn.textContent = '⟳ Loading…';
+  try {
+    const url = CSV_URL + '&cachebust=' + Date.now();
+    const res = await fetch(url, { cache: 'no-store' });
+    if(!res.ok) throw new Error(`HTTP ${res.status} — Sheet may not be published`);
+    const text = await res.text();
+    if(text.includes('<html') || text.length < 100) throw new Error('Received HTML instead of CSV — check Sheet is published as CSV');
+    const data = parseCSV(text);
+    // Count how many parameters were parsed
+    const count = Object.keys(data).length;
+    $('loadStatus').textContent = `Parsed ${count} parameters from Sheet…`;
+    if(count < 10) throw new Error(`Only ${count} parameters found — CSV may not be formatted correctly`);
+    setTimeout(() => {
+      renderDashboard(data);
+      if(btn) btn.textContent = '⟳ Refresh';
+    }, 200);
+  } catch(err) {
+    console.error('Dashboard fetch error:', err.message);
+    $('loadStatus').textContent = '⚠ ' + err.message;
+    setTimeout(() => {
+      $('loadScreen').style.display = 'none';
+      $('mainContent').style.display = 'block';
+      $('setupGuide').style.display = 'block';
+      renderFallback();
+      if(btn) btn.textContent = '⟳ Refresh';
+    }, 2000);
+  }
+}
+
+// ─── RENDER ───────────────────────────────────────────────
+function renderDashboard(data) {
+  $('loadScreen').style.display = 'none';
+  $('mainContent').style.display = 'block';
+  $('setupGuide').style.display = 'none';
+
+  const now = new Date();
+  $('lastUpdated').textContent = `Refreshed: ${now.toLocaleTimeString('en-MY', {hour:'2-digit',minute:'2-digit'})} · ${now.toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'})}`;
+
+  // ── HERO ──
+  const reCap   = val(data,'H02');
+  const reCap35 = val(data,'H03');
+  const reShare = parseFloat(val(data,'H01')) || 31;
+  const reTgt35 = parseFloat(val(data,'L1_03')) || 40;
+  const reTgt25 = val(data,'H01');
+  const baseline= val(data,'L1_17');
+  const growth  = val(data,'L1_16');
+  const ghgPct  = val(data,'H06');
+  const ghgBase = val(data,'H07');
+  const ghgTgt  = val(data,'H08');
+  const carbon  = val(data,'H10');
+
+  set('h-re-cap', reCap ? reCap+' GW' : '12+ GW');
+  set('h-re-cap-target', 'Target: '+(reCap35||'55')+' GW by 2035');
+  set('h-baseline', baseline ? baseline+' GW' : '6.7 GW');
+  set('h-growth', growth ? '+'+growth+'%' : '+79%');
+  set('h-ghg-pct', ghgPct ? ghgPct+'%' : '32%');
+  set('h-ghg-sub', `${ghgBase||259} → ${ghgTgt||175} MtCO₂eq by 2050`);
+  set('h-carbon-int', carbon ? '–'+carbon+'%' : '–60%');
+  set('h-target-25', (reTgt25||31)+'%');
+  set('h-achieved', (reTgt25||31)+'% ✓');
+  set('h-target-35', reTgt35+'%');
+  $('arcTargetLabel').textContent = reTgt35+'%';
+
+  // Animate arc (31/40 = 77.5% of arc)
+  const arcPct = reShare / reTgt35;
+  const totalDash = 251.2;
+  setTimeout(() => {
+    $('arcFill').style.strokeDashoffset = totalDash - (totalDash * arcPct);
+    let cur=0; const step=reShare/60;
+    const iv = setInterval(()=>{
+      cur+=step; if(cur>=reShare){cur=reShare;clearInterval(iv);}
+      $('arcNum').textContent=Math.round(cur);
+    },16);
+  }, 400);
+
+  // ── LEVERS ──
+  const leverDefs = [
+    { key:'green', icon:'⚡', num:'Lever 1', name:'Renewable Energy',
+      rows:[
+        { lbl:'RE Share (Installed Capacity)', curr: val(data,'L1_01'), tgt: val(data,'L1_03'), unit:'%', pctOf: val(data,'L1_03') },
+        { lbl:'Installed Capacity (GW)',        curr: val(data,'L1_05'), tgt: val(data,'L1_06'), unit:'GW', pctOf: val(data,'L1_06') },
+        { lbl:'Solar Capacity (GW)',            curr: val(data,'L1_08'), tgt: val(data,'L1_09'), unit:'GW', pctOf: val(data,'L1_09') },
+      ],
+      chips:[
+        { text:'✓ 2025 Target Met', cls:'on-track' },
+        { text:'LSS5+ Active', cls:'at-risk' },
+        { text:'CGPP Launched', cls:'' },
+      ]
+    },
+    { key:'gold', icon:'💡', num:'Lever 2', name:'Energy Efficiency',
+      rows:[
+        { lbl:'Industry & Commercial EE Savings', curr: val(data,'L2_01'), tgt: val(data,'L2_02'), unit:'%', pctOf: val(data,'L2_02') },
+        { lbl:'Govt Buildings Solar (MW)',         curr: val(data,'L2_03'), tgt: val(data,'L2_04'), unit:'MW', pctOf: val(data,'L2_04') },
+      ],
+      chips:[
+        { text:'⚠ Early Stage', cls:'at-risk' },
+        { text:'GTFS 4.0 Active', cls:'' },
+        { text:'GITA/GITE Extended', cls:'' },
+      ]
+    },
+    { key:'sky', icon:'🔬', num:'Lever 3', name:'Green Hydrogen',
+      rows:[
+        { lbl:'Green H₂ Plants (Sarawak)', curr: val(data,'L3_03'), tgt: val(data,'L3_04'), unit:' plants', pctOf: val(data,'L3_04') },
+        { lbl:'H₂ Production Target',      curr: 'Pilot', tgt: val(data,'L3_02')+' Mtpa', unit:'', pctOf: null, fixedPct: 5 },
+      ],
+      chips:[
+        { text:'⚠ Pilot Phase', cls:'at-risk' },
+        { text:'Sarawak Hub', cls:'' },
+        { text:'GITE Eligible', cls:'' },
+      ]
+    },
+    { key:'purple', icon:'🌿', num:'Lever 4', name:'Bioenergy',
+      rows:[
+        { lbl:'Biorefinery Capacity (BL)', curr: val(data,'L4_01'), tgt: val(data,'L4_02'), unit:' BL', pctOf: val(data,'L4_02') },
+        { lbl:'Biomass & Biogas Power (GW)',curr: val(data,'L4_03'), tgt: val(data,'L4_04'), unit:' GW', pctOf: val(data,'L4_04') },
+      ],
+      chips:[
+        { text:'⚠ Developing', cls:'at-risk' },
+        { text:'Palm Biomass', cls:'' },
+        { text:'UCO Programme', cls:'' },
+      ]
+    },
+    { key:'orange', icon:'🚗', num:'Lever 5', name:'Green Mobility',
+      rows:[
+        { lbl:'EV Charging Stations',             curr: val(data,'L5_01'), tgt: val(data,'L5_02'), unit:'', pctOf: val(data,'L5_02') },
+        { lbl:'Urban Public Transport Modal Share',curr: val(data,'L5_03'), tgt: val(data,'L5_04'), unit:'%', pctOf: val(data,'L5_04') },
+      ],
+      chips:[
+        { text:'⚠ Needs Scale-up', cls:'at-risk' },
+        { text:'xEV Policy', cls:'' },
+        { text:'E2W Included', cls:'' },
+      ]
+    },
+    { key:'teal', icon:'🏭', num:'Lever 6', name:'Carbon Capture (CCUS)',
+      rows:[
+        { lbl:'CCUS Clusters (of 3–6 target)', curr: val(data,'L6_01'), tgt: val(data,'L6_02')+'–'+val(data,'L6_03'), unit:' clusters', pctOf: val(data,'L6_02') },
+        { lbl:'CO₂ Storage Capacity (Mtpa)',   curr: val(data,'L6_04')||'Early', tgt: val(data,'L6_05')+'–'+val(data,'L6_06')+' Mtpa', unit:'', pctOf: null, fixedPct: 8 },
+      ],
+      chips:[
+        { text:'⚡ Early Stage', cls:'lagging' },
+        { text:'Kasawari Field', cls:'' },
+        { text:'Lang Lebah', cls:'' },
+      ]
+    },
+  ];
+
+  const grid = $('leverGrid');
+  grid.innerHTML = '';
+  leverDefs.forEach(lev => {
+    const card = document.createElement('div');
+    card.className = `lcard ${lev.key}`;
+    let rowsHTML = lev.rows.map(r => {
+      let pct = 0;
+      if(r.fixedPct !== undefined) pct = r.fixedPct;
+      else if(r.pctOf && r.curr && !isNaN(parseFloat(r.curr)) && !isNaN(parseFloat(r.pctOf))) {
+        pct = Math.min((parseFloat(r.curr)/parseFloat(r.pctOf))*100, 100);
+      }
+      const display = r.curr && r.tgt ? `${r.curr}${r.unit} / ${r.tgt}${r.unit}` : (r.curr||'—')+' / '+(r.tgt||'—');
+      return `<div class="prog-row">
+        <div class="prog-hd">
+          <span class="prog-lbl">${r.lbl}</span>
+          <span class="prog-val" style="color:var(--${lev.key==='green'?'sky':lev.key})">${display}</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill ${lev.key}" style="width:0%" data-target="${pct.toFixed(1)}"></div>
+        </div>
+      </div>`;
+    }).join('');
+    const chipsHTML = lev.chips.map(c=>`<span class="chip ${c.cls}">${c.text}</span>`).join('');
+    card.innerHTML = `<div class="l-icon">${lev.icon}</div><div class="l-num">${lev.num}</div><div class="l-name">${lev.name}</div>${rowsHTML}<div class="chips">${chipsHTML}</div>`;
+    grid.appendChild(card);
+  });
+
+  // Animate bars
+  setTimeout(() => {
+    document.querySelectorAll('.prog-fill').forEach(bar => {
+      bar.style.width = Math.min(parseFloat(bar.dataset.target)||0, 100)+'%';
+    });
+  }, 600);
+
+  // ── TIMELINE ──
+  const tlNodes = [
+    { id:'T01', dot:'done',    sym:'✓'  },
+    { id:'T02', dot:'done',    sym:'✓'  },
+    { id:'T03', dot:'done',    sym:'✓'  },
+    { id:'T04', dot:'done',    sym:'✓'  },
+    { id:'T05', dot:'current', sym:'★'  },
+    { id:'T06', dot:'future',  sym:'◇'  },
+    { id:'T07', dot:'future',  sym:'◇'  },
+    { id:'T08', dot:'future',  sym:'◇'  },
+    { id:'T09', dot:'future',  sym:'◇'  },
+  ];
+
+  const curReShare = parseFloat(val(data,'T05',2)) || 31;
+  const tgt35Share = parseFloat(val(data,'T07',2)) || 40;
+  const tlPctVal   = Math.round((curReShare/tgt35Share)*100);
+  set('tlPct', tlPctVal+'%');
+
+  const tlContainer = $('timeline');
+  const track = tlContainer.querySelector('.tl-track');
+  const prog  = tlContainer.querySelector('.tl-progress');
+  // Remove old nodes
+  [...tlContainer.children].forEach(c=>{ if(!c.classList.contains('tl-track') && !c.classList.contains('tl-progress')) c.remove(); });
+
+  tlNodes.forEach((n,i) => {
+    const row = data[n.id];
+    if(!row) return;
+    const year  = row[1]||'—';
+    const share = row[2]||'—';
+    const label = row[4]||'';
+    const node  = document.createElement('div');
+    node.className = 'tl-node';
+    node.innerHTML = `<div class="tl-dot ${n.dot}">${n.sym}</div>
+      <div class="tl-year">${year}</div>
+      <div class="tl-label">${label}</div>
+      <div class="tl-re ${n.dot}">${share}%</div>`;
+    tlContainer.appendChild(node);
+  });
+
+  setTimeout(()=>{ prog.style.width = '48%'; }, 500);
+
+  // ── ECONOMIC ──
+  const eInvest  = val(data,'E01');
+  const eInvTgt  = val(data,'E02');
+  const eJobs    = val(data,'E03');
+  const eJobsTgt = val(data,'E04');
+  const eGDP     = val(data,'E07');
+  const eGDPBase = val(data,'E06');
+  const eGDPCum  = val(data,'E08');
+  const eRT_min  = val(data,'E09');
+  const eRT_max  = val(data,'E10');
+  const eNETR_min= val(data,'E11');
+  const eNETR_max= val(data,'E12');
+
+  set('e-invest', eInvest ? 'RM'+eInvest+'B' : '—');
+  set('e-invest-target', eInvTgt ? 'RM'+eInvTgt+'B' : '—');
+  if(eInvest && eInvTgt) {
+    const pct = Math.round(((parseFloat(eInvest)-parseFloat(eInvTgt))/parseFloat(eInvTgt))*100);
+    set('e-invest-pct', `↑ ${pct}% above target`);
+  }
+  set('e-jobs', eJobs ? parseInt(eJobs).toLocaleString() : '—');
+  set('e-jobs-target', eJobsTgt ? parseInt(eJobsTgt).toLocaleString() : '—');
+  if(eJobs && eJobsTgt) {
+    const pct = Math.round(((parseFloat(eJobs)-parseFloat(eJobsTgt))/parseFloat(eJobsTgt))*100);
+    set('e-jobs-pct', `↑ ${pct}% above target`);
+  }
+  set('e-gdp', eGDP ? 'RM'+eGDP+'B' : '—');
+  set('e-gdp-sub', (eGDPBase||'25')+'B → '+(eGDP||'220')+'B');
+  set('e-gdp-cum', eGDPCum ? 'Cumulative RM'+parseInt(eGDPCum).toLocaleString()+'B by 2050' : '—');
+  set('e-ghg', '>10,000');
+  set('e-inv-rt', (eRT_min&&eRT_max) ? `RM${eRT_min}–${eRT_max}B` : '—');
+  set('e-inv-netr', (eNETR_min&&eNETR_max) ? `RM${eNETR_min}–${eNETR_max}B` : '—');
+
+  // ── FLAGSHIP ──
+  const flagshipIcons = ['☀️','💧','🏠','🔬','🌱','🚌','🏭','🏙️','🔋','🌏'];
+  const fl = $('flagshipList');
+  fl.innerHTML = '';
+  for(let i=1;i<=10;i++){
+    const id = 'F'+String(i).padStart(2,'0');
+    const row = data[id];
+    if(!row) continue;
+    const name   = row[1]||'';
+    const status = (row[2]||'').toLowerCase();
+    const cls    = status.includes('active') ? 'active' : status.includes('pilot') ? 'pilot' : 'planned';
+    const item = document.createElement('div');
+    item.className = 'fl-item';
+    item.innerHTML = `<div class="fl-num">F${i}</div><div class="fl-icon">${flagshipIcons[i-1]||'⚡'}</div><div class="fl-name">${name}</div><div class="fl-status ${cls}">${row[2]||'—'}</div>`;
+    fl.appendChild(item);
+  }
+
+  // ── GHG BARS ──
+  const ghgRows = [
+    { year:'2005', id:'', val:200, type:'actual' },
+    { year:'2010', id:'', val:218, type:'actual' },
+    { year:'2015', id:'', val:238, type:'actual' },
+  ];
+  // Pull from sheet
+  const ghgSheetRows = [
+    { year:'2019', type:'actual' },
+    { year:'2023', type:'actual' },
+    { year:'2026', type:'actual' },
+    { year:'2030', type:'target' },
+    { year:'2035', type:'target' },
+    { year:'2040', type:'target' },
+    { year:'2050', type:'target' },
+  ];
+
+  // Parse GHG section from raw CSV
+  const allLines = $('mainContent') ? [] : [];
+  const ghgData = [
+    {year:'2005',val:200,type:'actual'},
+    {year:'2010',val:218,type:'actual'},
+    {year:'2015',val:238,type:'actual'},
+    {year:'2019',val:parseFloat(val(data,'H07'))||259,type:'actual'},
+    {year:'2023',val:255,type:'actual'},
+    {year:'2026',val:248,type:'actual'},
+    {year:'2030',val:230,type:'target'},
+    {year:'2035',val:215,type:'target'},
+    {year:'2040',val:200,type:'target'},
+    {year:'2050',val:parseFloat(val(data,'H08'))||175,type:'target'},
+  ];
+
+  const ghgBase2019 = val(data,'H07')||'259';
+  const ghgTgt2050  = val(data,'H08')||'175';
+  const ghgRedn     = val(data,'H06')||'32';
+
+  set('ghg-base', ghgBase2019+' Mt');
+  set('ghg-2050', ghgTgt2050+' Mt');
+  set('ghg-2050-sub', '–'+ghgRedn+'% reduction from 2019 baseline');
+  $('ghgSubtitle').textContent = `Energy sector GHG: from ${ghgBase2019} Mt (2019 baseline) to ${ghgTgt2050} Mt by 2050 — a ${ghgRedn}% reduction.`;
+
+  const maxVal = Math.max(...ghgData.map(d=>d.val));
+  const maxH = 82;
+  const barsEl = $('ghgBars');
+  barsEl.innerHTML = '';
+  ghgData.forEach(d => {
+    const grp = document.createElement('div');
+    grp.className = 'ghg-grp';
+    const bar = document.createElement('div');
+    bar.className = `ghg-bar ${d.type}`;
+    bar.style.height = '0px'; bar.style.width='100%';
+    const vLabel = document.createElement('div');
+    vLabel.className='ghg-bar-v'; vLabel.textContent=d.val;
+    const yLabel = document.createElement('div');
+    yLabel.className='ghg-bar-yr'; yLabel.textContent=d.year;
+    bar.appendChild(vLabel); bar.appendChild(yLabel);
+    grp.appendChild(bar); barsEl.appendChild(grp);
+    const finalH = (d.val/maxVal)*maxH;
+    setTimeout(()=>{ bar.style.transition='height 1.2s cubic-bezier(0.4,0,0.2,1)'; bar.style.height=finalH+'px'; }, 300+ghgData.indexOf(d)*80);
+  });
+
+  // ── FOOTER ──
+  set('f-asean', '#'+val(data,'G01')+' ASEAN');
+  set('f-global', '#'+val(data,'G02')+' Global');
+  set('f-fund', 'RM'+val(data,'G04')+'M');
+  set('f-netzero', val(data,'G05'));
+}
+
+// Fallback with hardcoded values if sheet not published yet
+function renderFallback() {
+  // LIVE DATA — synced from Google Sheet via Claude Drive connector — 17 Jun 2026
+  const fallback = {
+    'H01':['','','31'],'H02':['','','12'],'H03':['','','55'],
+    'H06':['','','32'],'H07':['','','259'],'H08':['','','175'],'H10':['','','60'],
+    'L1_01':['','','31'],'L1_03':['','','40'],'L1_05':['','','12'],'L1_06':['','','18'],
+    'L1_08':['','','4.3'],'L1_09':['','','14'],'L1_16':['','','79'],'L1_17':['','','6.7'],
+    'L2_01':['','','8'],'L2_02':['','','23'],'L2_03':['','','180'],'L2_04':['','','4500'],
+    'L3_03':['','','1'],'L3_04':['','','3'],'L3_02':['','','2.5'],
+    'L4_01':['','','0.8'],'L4_02':['','','3.5'],'L4_03':['','','0.4'],'L4_04':['','','1.4'],
+    'L5_01':['','','4500'],'L5_02':['','','10000'],'L5_03':['','','25'],'L5_04':['','','60'],
+    'L6_01':['','','1'],'L6_02':['','','3'],'L6_03':['','','6'],'L6_04':['','','0'],'L6_05':['','','40'],'L6_06':['','','80'],
+    'T01':['','2019','24','','Baseline'],'T02':['','2022','25','','25% RE'],
+    'T03':['','2023','26','','NETR Launch'],'T04':['','2025','31','','2025 Target'],
+    'T05':['','2026','31','','Current Year'],'T06':['','2030','35','','13MP Target'],
+    'T07':['','2035','40','','NETR Target'],'T08':['','2040','55','','Low Carbon'],
+    'T09':['','2050','70','','Net Zero'],
+    'E01':['','','60.7'],'E02':['','','25'],'E03':['','','84544'],'E04':['','','23000'],
+    'E06':['','','25'],'E07':['','','220'],'E08':['','','1700'],
+    'E09':['','','1200'],'E10':['','','1300'],'E11':['','','435'],'E12':['','','1850'],
+    'F01':['','Large Scale Solar (LSS5+)','Active'],'F02':['','Floating Hydro-Solar (TNB)','Active'],
+    'F03':['','Residential Rooftop Solar (Solar ATAP)','Active'],'F04':['','Green Hydrogen Hubs — Sarawak','Pilot'],
+    'F05':['','Bioenergy & Biorefinery Programme','Pilot'],'F06':['','EV Charging Network (10000 Stations)','Active'],
+    'F07':['','CCUS — Kasawari & Lang Lebah','Pilot'],'F08':['','Zero-Carbon Industrial Zones','Pilot'],
+    'F09':['','Grid Modernisation & Smart Grid','Active'],'F10':['','ASEAN Power Grid & Cross-Border RE','Active'],
+    'G01':['','','1'],'G02':['','','35'],'G04':['','','300'],'G05':['','','2050'],
+  };
+  $('lastUpdated').textContent = 'Synced from Google Sheet · 17 Jun 2026 · Ask Claude to re-sync anytime';
+  renderDashboard(fallback);
+}
+
+// ─── BOOT ─────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
